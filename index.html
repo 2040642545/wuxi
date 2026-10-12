@@ -4,245 +4,539 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LED 七段数码管动画</title>
+<title>七段数码管 LED 控制屏</title>
+
 <style>
-  * { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-  body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: #080a0d;
-    color: #ff3434;
-    font-family: Arial, sans-serif;
-  }
+:root {
+  --led-on: #ff3030;
+  --led-off: #351313;
+  --bg: #080a0d;
+}
 
-  .screen {
-    width: min(90vw, 460px);
-    padding: 35px;
-    background: linear-gradient(145deg, #171a1e, #08090b);
-    border: 2px solid #34383c;
-    border-radius: 22px;
-    box-shadow: 0 0 35px #ff151515,
-                inset 0 0 25px #000;
-  }
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 24px 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg);
+  color: #eee;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
 
-  .label {
-    color: #777;
-    text-align: center;
-    font-size: 12px;
-    letter-spacing: 5px;
-    margin-bottom: 28px;
-  }
+.container {
+  width: 100%;
+  max-width: 520px;
+  padding: 25px 18px;
+  border: 1px solid #33383e;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #191c20, #090a0c);
+  box-shadow: 0 15px 50px #0009;
+}
 
+.title {
+  text-align: center;
+  font-size: 19px;
+  font-weight: bold;
+  letter-spacing: 3px;
+}
+
+.subtitle {
+  text-align: center;
+  color: #888;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* 数码管外框 */
+.display {
+  position: relative;
+  width: 210px;
+  height: 300px;
+  margin: 30px auto 24px;
+  border: 1px solid #25292d;
+  border-radius: 14px;
+  background: #050606;
+  box-shadow: inset 0 0 30px #000;
+}
+
+/* 七个独立灯段 */
+.segment {
+  position: absolute;
+  background: var(--led-off);
+  border: 1px solid #4c1b1b;
+  transition:
+    background .15s ease,
+    box-shadow .15s ease,
+    opacity .15s ease;
+  cursor: pointer;
+}
+
+.segment.on {
+  background: var(--led-on);
+  border-color: #ff8585;
+  box-shadow:
+    0 0 6px #ff3030,
+    0 0 15px #ff2020,
+    0 0 30px #ff000055;
+}
+
+/* 横向灯段：a、g、d */
+.segment.a,
+.segment.g,
+.segment.d {
+  width: 120px;
+  height: 17px;
+  left: 44px;
+  clip-path: polygon(
+    9% 0, 91% 0, 100% 50%,
+    91% 100%, 9% 100%, 0 50%
+  );
+}
+
+.segment.a { top: 12px; }
+.segment.g { top: 141px; }
+.segment.d { bottom: 12px; }
+
+/* 纵向灯段：b、c、e、f */
+.segment.b,
+.segment.c,
+.segment.e,
+.segment.f {
+  width: 17px;
+  height: 117px;
+  clip-path: polygon(
+    0 8%, 50% 0, 100% 8%,
+    100% 92%, 50% 100%, 0 92%
+  );
+}
+
+.segment.f { left: 27px; top: 27px; }
+.segment.b { right: 27px; top: 27px; }
+.segment.e { left: 27px; bottom: 27px; }
+.segment.c { right: 27px; bottom: 27px; }
+
+/* 状态文字 */
+.status {
+  text-align: center;
+  color: #ff6060;
+  font-size: 13px;
+  margin: 12px 0 18px;
+}
+
+/* 按钮区域 */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 9px;
+}
+
+button,
+select {
+  color: #eee;
+  background: #24282d;
+  border: 1px solid #444b52;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #393e45;
+}
+
+button:active {
+  transform: scale(.97);
+}
+
+.primary {
+  color: white;
+  background: #a51f1f;
+  border-color: #e33b3b;
+}
+
+.primary:hover {
+  background: #c52a2a;
+}
+
+.section-title {
+  margin: 25px 0 12px;
+  color: #bbb;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 数字选择按钮 */
+.digit-buttons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.digit-buttons button {
+  padding: 12px 4px;
+  font-size: 18px;
+}
+
+.digit-buttons button.active {
+  background: #b52121;
+  border-color: #ff5050;
+  box-shadow: 0 0 12px #ff202044;
+}
+
+/* 七段灯独立控制 */
+.segment-controls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.segment-controls button {
+  padding: 10px 3px;
+  font-weight: bold;
+}
+
+.segment-controls button.active {
+  color: #ff6767;
+  border-color: #ff4545;
+  background: #451919;
+}
+
+.options {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  color: #bbb;
+  font-size: 13px;
+}
+
+input[type="range"] {
+  width: 125px;
+  accent-color: #ff3030;
+}
+
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  color: #62676c;
+  font-size: 11px;
+}
+
+@media (max-width: 360px) {
   .display {
-    position: relative;
-    width: 170px;
-    height: 250px;
-    margin: auto;
+    transform: scale(.9);
+    margin-top: 15px;
+    margin-bottom: 15px;
   }
 
-  .segment {
-    position: absolute;
-    background: #351010;
-    border: 1px solid #491414;
-    transition: background .18s, box-shadow .18s;
+  .container {
+    padding: 20px 12px;
   }
-
-  .segment.on {
-    background: #ff2929;
-    border-color: #ff6666;
-    box-shadow: 0 0 8px #ff2020,
-                0 0 22px #ff2020,
-                0 0 42px #ff000055;
-  }
-
-  /* 七段数码管：a、b、c、d、e、f、g */
-  .a, .g, .d {
-    width: 100px;
-    height: 14px;
-    left: 35px;
-    clip-path: polygon(10% 0, 90% 0, 100% 50%,
-                       90% 100%, 10% 100%, 0 50%);
-  }
-
-  .a { top: 8px; }
-  .g { top: 118px; }
-  .d { bottom: 8px; }
-
-  .b, .c, .e, .f {
-    width: 14px;
-    height: 100px;
-    clip-path: polygon(0 8%, 50% 0, 100% 8%,
-                       100% 92%, 50% 100%, 0 92%);
-  }
-
-  .f { left: 22px; top: 20px; }
-  .b { right: 22px; top: 20px; }
-  .e { left: 22px; bottom: 20px; }
-  .c { right: 22px; bottom: 20px; }
-
-  .controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    margin-top: 30px;
-  }
-
-  button {
-    color: #ff5252;
-    background: #171a1e;
-    border: 1px solid #633030;
-    border-radius: 8px;
-    padding: 10px 16px;
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: #321414;
-  }
-
-  .status {
-    margin-top: 20px;
-    color: #777;
-    text-align: center;
-    font-size: 12px;
-    letter-spacing: 2px;
-  }
-
-  .all-digits {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 7px;
-    margin-top: 28px;
-  }
-
-  .digit-btn {
-    min-width: 35px;
-    padding: 8px;
-    font-size: 14px;
-  }
-
-  .digit-btn.active {
-    color: #fff;
-    background: #9d1717;
-    box-shadow: 0 0 12px #ff202044;
-  }
+}
 </style>
 </head>
+
 <body>
 
-<div class="screen">
-  <div class="label">SEVEN SEGMENT DISPLAY</div>
+<main class="container">
 
+  <div class="title">SEVEN SEGMENT LED</div>
+  <div class="subtitle">七段数码管 · 0—9 数字控制系统</div>
+
+  <!-- 七个独立的 LED 灯段 -->
   <div class="display" id="display">
-    <div class="segment a" data-seg="a"></div>
-    <div class="segment b" data-seg="b"></div>
-    <div class="segment c" data-seg="c"></div>
-    <div class="segment d" data-seg="d"></div>
-    <div class="segment e" data-seg="e"></div>
-    <div class="segment f" data-seg="f"></div>
-    <div class="segment g" data-seg="g"></div>
+
+    <div class="segment a" id="seg-a"
+         data-seg="a" title="a 段"></div>
+
+    <div class="segment b" id="seg-b"
+         data-seg="b" title="b 段"></div>
+
+    <div class="segment c" id="seg-c"
+         data-seg="c" title="c 段"></div>
+
+    <div class="segment d" id="seg-d"
+         data-seg="d" title="d 段"></div>
+
+    <div class="segment e" id="seg-e"
+         data-seg="e" title="e 段"></div>
+
+    <div class="segment f" id="seg-f"
+         data-seg="f" title="f 段"></div>
+
+    <div class="segment g" id="seg-g"
+         data-seg="g" title="g 段"></div>
+
   </div>
 
+  <div class="status" id="status">
+    当前数字：0
+  </div>
+
+  <!-- 自动播放与手动切换 -->
   <div class="controls">
     <button id="prev">◀ 上一个</button>
-    <button id="toggle">暂停</button>
+    <button id="play" class="primary">▶ 自动播放</button>
     <button id="next">下一个 ▶</button>
+    <button id="clear">全部熄灭</button>
   </div>
 
-  <div class="status" id="status">AUTO PLAY · 1000ms</div>
+  <!-- 选择数字 0-9 -->
+  <div class="section-title">选择显示数字</div>
+  <div class="digit-buttons" id="digitButtons"></div>
 
-  <div class="all-digits" id="digits"></div>
-</div>
+  <!-- 单独控制七个灯段 -->
+  <div class="section-title">独立灯段控制（点击开关）</div>
+  <div class="segment-controls" id="segmentButtons"></div>
+
+  <!-- 动画速度设置 -->
+  <div class="options">
+    <label for="speed">切换速度</label>
+    <input
+      id="speed"
+      type="range"
+      min="100"
+      max="2000"
+      step="100"
+      value="1000"
+    >
+    <span id="speedLabel">1000 ms</span>
+  </div>
+
+  <!-- 发光颜色设置 -->
+  <div class="options">
+    <label for="color">灯光颜色</label>
+    <select id="color">
+      <option value="#ff3030">红色</option>
+      <option value="#00ff66">绿色</option>
+      <option value="#00bfff">蓝色</option>
+      <option value="#ffd633">黄色</option>
+      <option value="#ff55ff">紫色</option>
+      <option value="#ffffff">白色</option>
+    </select>
+  </div>
+
+  <div class="footer">
+    HTML + CSS + JavaScript · 无需安装任何插件
+  </div>
+
+</main>
 
 <script>
-  const patterns = [
-    "abcdef",  // 0
-    "bc",      // 1
-    "abdeg",   // 2
-    "abcdg",   // 3
-    "bcfg",    // 4
-    "acdfg",   // 5
-    "acdefg",  // 6
-    "abc",     // 7
-    "abcdefg", // 8
-    "abcdfg"   // 9
-  ];
+/*
+ * 七段数码管定义
+ *
+ *      aaa
+ *     f   b
+ *     f   b
+ *      ggg
+ *     e   c
+ *     e   c
+ *      ddd
+ *
+ * 每个字母代表一个独立灯段。
+ */
 
-  const segments = [...document.querySelectorAll(".segment")];
-  const digits = document.getElementById("digits");
-  const status = document.getElementById("status");
-  const toggle = document.getElementById("toggle");
+const patterns = {
+  0: ["a", "b", "c", "d", "e", "f"],
+  1: ["b", "c"],
+  2: ["a", "b", "d", "e", "g"],
+  3: ["a", "b", "c", "d", "g"],
+  4: ["b", "c", "f", "g"],
+  5: ["a", "c", "d", "f", "g"],
+  6: ["a", "c", "d", "e", "f", "g"],
+  7: ["a", "b", "c"],
+  8: ["a", "b", "c", "d", "e", "f", "g"],
+  9: ["a", "b", "c", "d", "f", "g"]
+};
 
-  let current = 0;
-  let playing = true;
-  let timer;
-  const interval = 1000;
+const segmentNames = ["a", "b", "c", "d", "e", "f", "g"];
 
-  function showDigit(n) {
-    current = (n + 10) % 10;
-    const pattern = patterns[current];
+let currentDigit = 0;
+let playing = false;
+let timer = null;
+let speed = 1000;
 
-    segments.forEach(segment => {
-      segment.classList.toggle(
-        "on",
-        pattern.includes(segment.dataset.seg)
-      );
-    });
+// 当前实际点亮的灯段
+let litSegments = new Set(patterns[0]);
 
-    document.querySelectorAll(".digit-btn").forEach((btn, i) => {
-      btn.classList.toggle("active", i === current);
-    });
-  }
+const status = document.getElementById("status");
+const playButton = document.getElementById("play");
+const digitButtons = document.getElementById("digitButtons");
+const segmentButtons = document.getElementById("segmentButtons");
+const speedInput = document.getElementById("speed");
+const speedLabel = document.getElementById("speedLabel");
+const colorInput = document.getElementById("color");
 
-  function start() {
+// 更新屏幕灯光
+function render() {
+  segmentNames.forEach(name => {
+    const lamp = document.getElementById("seg-" + name);
+    lamp.classList.toggle("on", litSegments.has(name));
+  });
+
+  // 更新数字选择按钮状态
+  document.querySelectorAll(".digit-button").forEach(button => {
+    button.classList.toggle(
+      "active",
+      Number(button.dataset.digit) === currentDigit
+    );
+  });
+
+  // 更新七段灯控制按钮状态
+  segmentNames.forEach(name => {
+    const button = document.getElementById("control-" + name);
+    button.classList.toggle("active", litSegments.has(name));
+  });
+
+  status.textContent =
+    "当前数字：" + currentDigit +
+    "  |  点亮灯段：" +
+    (litSegments.size ? [...litSegments].join(", ").toUpperCase() : "无");
+}
+
+// 显示指定数字
+function showDigit(n) {
+  currentDigit = ((n % 10) + 10) % 10;
+  litSegments = new Set(patterns[currentDigit]);
+  render();
+}
+
+// 生成数字按钮
+for (let n = 0; n <= 9; n++) {
+  const button = document.createElement("button");
+  button.textContent = n;
+  button.className = "digit-button";
+  button.dataset.digit = n;
+
+  button.addEventListener("click", () => {
+    showDigit(n);
+  });
+
+  digitButtons.appendChild(button);
+}
+
+// 生成七段灯独立控制按钮
+segmentNames.forEach(name => {
+  const button = document.createElement("button");
+  button.id = "control-" + name;
+  button.textContent = name.toUpperCase() + " 段";
+
+  button.addEventListener("click", () => {
+    // 点击某段时停止自动播放，避免动画覆盖手动操作
+    stopAuto();
+
+    if (litSegments.has(name)) {
+      litSegments.delete(name);
+    } else {
+      litSegments.add(name);
+    }
+
+    render();
+  });
+
+  segmentButtons.appendChild(button);
+});
+
+// 点击数码管上的灯段，也可以独立开关
+document.querySelectorAll(".segment").forEach(lamp => {
+  lamp.addEventListener("click", () => {
+    stopAuto();
+
+    const name = lamp.dataset.seg;
+
+    if (litSegments.has(name)) {
+      litSegments.delete(name);
+    } else {
+      litSegments.add(name);
+    }
+
+    render();
+  });
+});
+
+// 上一个数字
+document.getElementById("prev").addEventListener("click", () => {
+  stopAuto();
+  showDigit(currentDigit - 1);
+});
+
+// 下一个数字
+document.getElementById("next").addEventListener("click", () => {
+  stopAuto();
+  showDigit(currentDigit + 1);
+});
+
+// 清除所有灯段
+document.getElementById("clear").addEventListener("click", () => {
+  stopAuto();
+  litSegments.clear();
+  render();
+});
+
+// 启动自动播放
+function startAuto() {
+  stopAuto();
+
+  playing = true;
+  playButton.textContent = "❚❚ 暂停动画";
+
+  timer = setInterval(() => {
+    showDigit(currentDigit + 1);
+  }, speed);
+}
+
+// 停止自动播放
+function stopAuto() {
+  if (timer !== null) {
     clearInterval(timer);
-    timer = setInterval(() => {
-      showDigit(current + 1);
-    }, interval);
-    playing = true;
-    toggle.textContent = "暂停";
-    status.textContent = "AUTO PLAY · 1000ms";
+    timer = null;
   }
 
-  function stop() {
-    clearInterval(timer);
-    playing = false;
-    toggle.textContent = "继续";
-    status.textContent = "PAUSED · " + current;
+  playing = false;
+  playButton.textContent = "▶ 自动播放";
+}
+
+// 播放/暂停切换
+playButton.addEventListener("click", () => {
+  if (playing) {
+    stopAuto();
+  } else {
+    startAuto();
   }
+});
 
-  for (let i = 0; i <= 9; i++) {
-    const btn = document.createElement("button");
-    btn.className = "digit-btn";
-    btn.textContent = i;
-    btn.onclick = () => {
-      showDigit(i);
-      if (playing) start();
-    };
-    digits.appendChild(btn);
+// 修改动画速度
+speedInput.addEventListener("input", () => {
+  speed = Number(speedInput.value);
+  speedLabel.textContent = speed + " ms";
+
+  // 播放状态下修改速度，立即应用
+  if (playing) {
+    startAuto();
   }
+});
 
-  document.getElementById("prev").onclick = () => {
-    showDigit(current - 1);
-    if (playing) start();
-  };
+// 修改灯光颜色
+colorInput.addEventListener("change", () => {
+  document.documentElement.style.setProperty(
+    "--led-on",
+    colorInput.value
+  );
+});
 
-  document.getElementById("next").onclick = () => {
-    showDigit(current + 1);
-    if (playing) start();
-  };
-
-  toggle.onclick = () => playing ? stop() : start();
-
-  showDigit(0);
-  start();
+// 初始化
+showDigit(0);
 </script>
 
 </body>
