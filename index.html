@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LED 七段数码管动画</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #080a0d;
+    color: #ff3434;
+    font-family: Arial, sans-serif;
+  }
+
+  .screen {
+    width: min(90vw, 460px);
+    padding: 35px;
+    background: linear-gradient(145deg, #171a1e, #08090b);
+    border: 2px solid #34383c;
+    border-radius: 22px;
+    box-shadow: 0 0 35px #ff151515,
+                inset 0 0 25px #000;
+  }
+
+  .label {
+    color: #777;
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 5px;
+    margin-bottom: 28px;
+  }
+
+  .display {
+    position: relative;
+    width: 170px;
+    height: 250px;
+    margin: auto;
+  }
+
+  .segment {
+    position: absolute;
+    background: #351010;
+    border: 1px solid #491414;
+    transition: background .18s, box-shadow .18s;
+  }
+
+  .segment.on {
+    background: #ff2929;
+    border-color: #ff6666;
+    box-shadow: 0 0 8px #ff2020,
+                0 0 22px #ff2020,
+                0 0 42px #ff000055;
+  }
+
+  /* 七段数码管：a、b、c、d、e、f、g */
+  .a, .g, .d {
+    width: 100px;
+    height: 14px;
+    left: 35px;
+    clip-path: polygon(10% 0, 90% 0, 100% 50%,
+                       90% 100%, 10% 100%, 0 50%);
+  }
+
+  .a { top: 8px; }
+  .g { top: 118px; }
+  .d { bottom: 8px; }
+
+  .b, .c, .e, .f {
+    width: 14px;
+    height: 100px;
+    clip-path: polygon(0 8%, 50% 0, 100% 8%,
+                       100% 92%, 50% 100%, 0 92%);
+  }
+
+  .f { left: 22px; top: 20px; }
+  .b { right: 22px; top: 20px; }
+  .e { left: 22px; bottom: 20px; }
+  .c { right: 22px; bottom: 20px; }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  button {
+    color: #ff5252;
+    background: #171a1e;
+    border: 1px solid #633030;
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #321414;
+  }
+
+  .status {
+    margin-top: 20px;
+    color: #777;
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .all-digits {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 28px;
+  }
+
+  .digit-btn {
+    min-width: 35px;
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  .digit-btn.active {
+    color: #fff;
+    background: #9d1717;
+    box-shadow: 0 0 12px #ff202044;
+  }
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="label">SEVEN SEGMENT DISPLAY</div>
+
+  <div class="display" id="display">
+    <div class="segment a" data-seg="a"></div>
+    <div class="segment b" data-seg="b"></div>
+    <div class="segment c" data-seg="c"></div>
+    <div class="segment d" data-seg="d"></div>
+    <div class="segment e" data-seg="e"></div>
+    <div class="segment f" data-seg="f"></div>
+    <div class="segment g" data-seg="g"></div>
+  </div>
+
+  <div class="controls">
+    <button id="prev">◀ 上一个</button>
+    <button id="toggle">暂停</button>
+    <button id="next">下一个 ▶</button>
+  </div>
+
+  <div class="status" id="status">AUTO PLAY · 1000ms</div>
+
+  <div class="all-digits" id="digits"></div>
+</div>
+
+<script>
+  const patterns = [
+    "abcdef",  // 0
+    "bc",      // 1
+    "abdeg",   // 2
+    "abcdg",   // 3
+    "bcfg",    // 4
+    "acdfg",   // 5
+    "acdefg",  // 6
+    "abc",     // 7
+    "abcdefg", // 8
+    "abcdfg"   // 9
+  ];
+
+  const segments = [...document.querySelectorAll(".segment")];
+  const digits = document.getElementById("digits");
+  const status = document.getElementById("status");
+  const toggle = document.getElementById("toggle");
+
+  let current = 0;
+  let playing = true;
+  let timer;
+  const interval = 1000;
+
+  function showDigit(n) {
+    current = (n + 10) % 10;
+    const pattern = patterns[current];
+
+    segments.forEach(segment => {
+      segment.classList.toggle(
+        "on",
+        pattern.includes(segment.dataset.seg)
+      );
+    });
+
+    document.querySelectorAll(".digit-btn").forEach((btn, i) => {
+      btn.classList.toggle("active", i === current);
+    });
+  }
+
+  function start() {
+    clearInterval(timer);
+    timer = setInterval(() => {
+      showDigit(current + 1);
+    }, interval);
+    playing = true;
+    toggle.textContent = "暂停";
+    status.textContent = "AUTO PLAY · 1000ms";
+  }
+
+  function stop() {
+    clearInterval(timer);
+    playing = false;
+    toggle.textContent = "继续";
+    status.textContent = "PAUSED · " + current;
+  }
+
+  for (let i = 0; i <= 9; i++) {
+    const btn = document.createElement("button");
+    btn.className = "digit-btn";
+    btn.textContent = i;
+    btn.onclick = () => {
+      showDigit(i);
+      if (playing) start();
+    };
+    digits.appendChild(btn);
+  }
+
+  document.getElementById("prev").onclick = () => {
+    showDigit(current - 1);
+    if (playing) start();
+  };
+
+  document.getElementById("next").onclick = () => {
+    showDigit(current + 1);
+    if (playing) start();
+  };
+
+  toggle.onclick = () => playing ? stop() : start();
+
+  showDigit(0);
+  start();
+</script>
+
+</body>
+</html>
